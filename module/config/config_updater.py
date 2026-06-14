@@ -150,6 +150,14 @@ class ConfigGenerator:
         return read_file(filepath_argument('gui'))
 
     @cached_property
+    def dashboard(self):
+        """
+        <dashboard>
+          - <group>
+        """
+        return read_file(filepath_argument('dashboard'))
+
+    @cached_property
     @timer
     def args(self):
         """
@@ -163,11 +171,23 @@ class ConfigGenerator:
         """
         # Construct args
         data = {}
+
+        for path, groups in deep_iter(self.dashboard, depth=1):
+            task = path[0]
+            groups = list(groups)
+            groups.append('Storage')
+            for group in groups:
+                if group not in self.argument:
+                    print(f'`{task}.{group}` is not related to any argument group')
+                    continue
+                deep_set(data, keys=[task, group], value=deepcopy(self.argument[group]))
+
         for path, groups in deep_iter(self.task, depth=3):
             if 'tasks' not in path:
                 continue
             task = path[2]
             # Add storage to all task
+            groups = list(groups)
             groups.append('Storage')
             for group in groups:
                 if group not in self.argument:

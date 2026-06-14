@@ -424,6 +424,11 @@ class CampaignRun(CampaignEvent):
             if self.triggered_stop_condition(oil_check=not self.campaign.is_in_auto_search_menu()):
                 break
 
+            # Update config
+            if len(self.config.modified):
+                logger.info('Updating config for dashboard')
+                self.config.update()
+
             # Run
             self.device.stuck_record_clear()
             self.device.click_record_clear()
@@ -433,6 +438,11 @@ class CampaignRun(CampaignEvent):
                 logger.hr('Script end')
                 logger.info(str(e))
                 break
+
+            # Update config
+            if len(self.campaign.config.modified):
+                logger.info('Updating config for dashboard')
+                self.campaign.config.update()
 
             # After run
             self.run_count += 1
