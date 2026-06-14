@@ -8,6 +8,7 @@ import module.config.server as server
 from module.base.timer import Timer
 from module.base.utils import color_similar, get_color
 from module.campaign.assets import OCR_COIN, OCR_EVENT_PT, OCR_OIL, OCR_OIL_CHECK
+from module.log_res.log_res import LogRes
 from module.logger import logger
 from module.ocr.ocr import Digit, Ocr
 from module.ui.ui import UI
@@ -43,7 +44,7 @@ OCR_PT = PtOcr(OCR_EVENT_PT)
 
 
 class CampaignStatus(UI):
-    def get_event_pt(self):
+    def get_event_pt(self, update=False):
         """
         Returns:
             int: PT amount, or 0 if unable to parse
@@ -54,12 +55,15 @@ class CampaignStatus(UI):
         if res:
             pt = int(res.group(1))
             logger.attr('Event_PT', pt)
-            return pt
+            LogRes(self.config).Pt = pt
         else:
             logger.warning(f'Invalid pt result: {pt}')
-            return 0
+            pt = 0
+        if update:
+            self.config.update()
+        return pt
 
-    def get_coin(self, skip_first_screenshot=True):
+    def get_coin(self, skip_first_screenshot=True, update=False):
         """
         Returns:
             int: Coin amount
@@ -80,6 +84,9 @@ class CampaignStatus(UI):
             if amount >= 100:
                 break
 
+        LogRes(self.config).Coin = amount
+        if update:
+            self.config.update()
         return amount
 
     def _get_oil(self):
@@ -102,7 +109,7 @@ class CampaignStatus(UI):
 
         return ocr.ocr(self.device.image)
 
-    def get_oil(self, skip_first_screenshot=True):
+    def get_oil(self, skip_first_screenshot=True, update=False):
         """
         Returns:
             int: Oil amount
@@ -127,6 +134,9 @@ class CampaignStatus(UI):
             if amount >= 100:
                 break
 
+        LogRes(self.config).Oil = amount
+        if update:
+            self.config.update()
         return amount
 
     def is_balancer_task(self):

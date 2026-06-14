@@ -7,6 +7,7 @@ from module.campaign.campaign_event import CampaignEvent
 from module.combat.assets import *
 from module.exception import ScriptError
 from module.logger import logger
+from module.log_res.log_res import LogRes
 from module.map.map_operation import MapOperation
 from module.ocr.ocr import Digit, DigitCounter
 from module.raid.assets import *
@@ -393,10 +394,14 @@ class Raid(MapOperation, RaidCombat, CampaignEvent):
                 pt = ocr.ocr(self.device.image)
                 if timeout.reached():
                     logger.warning('Wait PT timeout, assume it is')
+                    LogRes(self.config).Pt = pt
+                    self.config.update()
                     return pt
                 if pt in [70000, 70001]:
                     continue
                 else:
+                    LogRes(self.config).Pt = pt
+                    self.config.update()
                     return pt
         else:
             logger.info(f'Raid {self.config.Campaign_Event} does not support PT ocr, skip')

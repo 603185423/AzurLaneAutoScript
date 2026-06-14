@@ -542,5 +542,21 @@ def type_to_str(typ):
     return str(typ)
 
 
+def time_delta(_timedelta):
+    """
+    Output a compact delta dictionary for relative-time display.
+    """
+    d_base = datetime(2010, 1, 1, 0, 0, 0)
+    d = d_base - _timedelta
+    return {
+        'Y': d.year - d_base.year,
+        'M': d.month - d_base.month,
+        'D': d.day - d_base.day,
+        'h': d.hour - d_base.hour,
+        'm': d.minute - d_base.minute,
+        's': d.second - d_base.second,
+    }
+
+
 if __name__ == '__main__':
     get_os_reset_remain()

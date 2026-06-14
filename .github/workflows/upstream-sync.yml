@@ -1,0 +1,58 @@
+name: Upstream Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: upstream-sync-master
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Configure upstream remote
+        run: |
+          if git remote get-url upstream >/dev/null 2>&1; then
+            git remote set-url upstream https://github.com/LmeSzinc/AzurLaneAutoScript.git
+          else
+            git remote add upstream https://github.com/LmeSzinc/AzurLaneAutoScript.git
+          fi
+
+      - name: Fetch upstream
+        run: git fetch upstream --prune
+
+      - name: Merge upstream/master
+        run: git merge --no-ff --no-edit upstream/master
+
+      - name: Verify Python syntax
+        run: |
+          python -m compileall \
+            module/log_res \
+            module/config \
+            module/webui \
+            module/campaign \
+            module/shop \
+            module/gacha \
+            module/os_handler \
+            module/raid \
+            module/coalition
+
+      - name: Push synced master
+        run: git push origin HEAD:master

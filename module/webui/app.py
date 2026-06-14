@@ -1,6 +1,7 @@
 import argparse
 import json
 import queue
+import re
 import threading
 import time
 from datetime import datetime
@@ -51,7 +52,9 @@ from module.config.utils import (
     filepath_args,
     filepath_config,
     read_file,
+    time_delta,
 )
+from module.log_res.log_res import LogRes
 from module.logger import logger
 from module.ocr.rpc import start_ocr_server_process, stop_ocr_server_process
 from module.submodule.submodule import load_config
@@ -95,6 +98,26 @@ patch_executor()
 patch_mimetype()
 fix_py37_subprocess_communicate()
 task_handler = TaskHandler()
+
+
+def timedelta_to_text(delta=None):
+    suffix_map = {
+        "Y": "YearsAgo",
+        "M": "MonthsAgo",
+        "D": "DaysAgo",
+        "h": "HoursAgo",
+        "m": "MinutesAgo",
+        "s": "SecondsAgo",
+    }
+    suffix = "NoData"
+    display = ""
+    if isinstance(delta, dict):
+        for key in delta:
+            if delta[key]:
+                suffix = suffix_map[key]
+                display = delta[key]
+                break
+    return f"{display}{t('Gui.Overview.' + suffix)}"
 
 
 class AlasGUI(Frame):
@@ -462,6 +485,8 @@ class AlasGUI(Frame):
         )
 
         log = RichLog("log")
+        self._log = log
+        self._log.dashboard_arg_group = LogRes(self.alas_config).groups
 
         with use_scope("logs"):
             put_scope(
@@ -474,8 +499,11 @@ class AlasGUI(Frame):
                         "log-bar-btns",
                         [
                             put_scope("log_scroll_btn"),
+                            put_scope("dashboard_btn"),
                         ],
                     ),
+                    put_html('<hr class="hr-group">'),
+                    put_scope("dashboard"),
                 ],
             )
             put_scope("log", [put_html("")])
@@ -492,11 +520,27 @@ class AlasGUI(Frame):
             color_off="off",
             scope="log_scroll_btn",
         )
+        switch_dashboard = BinarySwitchButton(
+            label_on=t("Gui.Button.DashboardON"),
+            label_off=t("Gui.Button.DashboardOFF"),
+            onclick_on=lambda: self.set_dashboard_display(False),
+            onclick_off=lambda: self.set_dashboard_display(True),
+            get_state=lambda: log.display_dashboard,
+            color_on="off",
+            color_off="on",
+            scope="dashboard_btn",
+        )
 
         self.task_handler.add(switch_scheduler.g(), 1, True)
         self.task_handler.add(switch_log_scroll.g(), 1, True)
+        self.task_handler.add(switch_dashboard.g(), 1, True)
         self.task_handler.add(self.alas_update_overview_task, 10, True)
+        self.task_handler.add(self.alas_update_dashboard, 10, True)
         self.task_handler.add(log.put_log(self.alas), 0.25, True)
+
+    def set_dashboard_display(self, b):
+        self._log.set_dashboard_display(b)
+        self.alas_update_dashboard(True)
 
     def _init_alas_config_watcher(self) -> None:
         def put_queue(path, value):
@@ -636,6 +680,95 @@ class AlasGUI(Frame):
                     put_task(task)
             else:
                 put_text(t("Gui.Overview.NoTask")).style("--overview-notask-text--")
+
+    def _update_dashboard(self, num=None, groups_to_display=None):
+        count = 0
+        max_items = 10000 if num is None else num
+        arg_groups = self._log.dashboard_arg_group if groups_to_display is None else groups_to_display
+        time_now = datetime.now().replace(microsecond=0)
+
+        for group_name in arg_groups:
+            group = deep_get(self.alas_config.data, keys=f"Dashboard.{group_name}")
+            if group is None:
+                continue
+
+            value = str(group["Value"])
+            if "Limit" in group:
+                value_extra = f' / {group["Limit"]}'
+                extra_style = "--dashboard-limit--"
+            elif "Total" in group:
+                value_extra = f' ({group["Total"]})'
+                extra_style = "--dashboard-total--"
+            else:
+                value_extra = ""
+                extra_style = "--dashboard-total--"
+                if group_name == "Pt":
+                    limit = re.sub(r"[,.\'\"，。]", "", str(deep_get(self.alas_config.data, "EventGeneral.EventGeneral.PtLimit")))
+                    if limit and limit != "0":
+                        value_extra = f" / {limit}"
+                        extra_style = "--dashboard-limit--"
+
+            value_time = group["Record"]
+            no_data_time = datetime(2023, 1, 1, 0, 0, 0)
+            if value_time is None or value_time == datetime(2020, 1, 1, 0, 0, 0):
+                value_time = no_data_time
+
+            if value_time == no_data_time:
+                value = "None"
+                delta = timedelta_to_text()
+            else:
+                delta = timedelta_to_text(time_delta(value_time - time_now))
+
+            if group_name not in self._log.last_display_time:
+                self._log.last_display_time[group_name] = ""
+            if self._log.last_display_time[group_name] == delta and not self._log.first_display:
+                continue
+            self._log.last_display_time[group_name] = delta
+
+            if value == "None":
+                value_extra = ""
+
+            color = deep_get(group, "Color", "^000000").replace("^", "#")
+            with use_scope(group_name, clear=True):
+                put_row(
+                    [
+                        put_html(f'<div class="status-point" style="background-color:{color}"></div>'),
+                        put_scope(
+                            f"{group_name}_group",
+                            [
+                                put_column(
+                                    [
+                                        put_row(
+                                            [
+                                                put_text(value).style("--dashboard-value--"),
+                                                put_text(value_extra).style(extra_style),
+                                            ]
+                                        ).style("grid-template-columns:min-content auto;align-items: baseline;"),
+                                        put_text(f'{t(f"Gui.Overview.{group_name}")} - {delta}').style("--dashboard-help--"),
+                                    ],
+                                    size="auto auto",
+                                )
+                            ],
+                        ),
+                    ],
+                    size="20px 1fr",
+                ).style("height: 1fr")
+            count += 1
+            if count >= max_items:
+                break
+
+        if self._log.first_display:
+            self._log.first_display = False
+
+    def alas_update_dashboard(self, _clear=False):
+        if not self.visible:
+            return
+        self.alas_config.load()
+        with use_scope("dashboard", clear=_clear):
+            if not self._log.display_dashboard:
+                self._update_dashboard(num=4, groups_to_display=["Oil", "Coin", "Gem", "Pt"])
+            else:
+                self._update_dashboard()
 
     @use_scope("content", clear=True)
     def alas_daemon_overview(self, task: str) -> None:
