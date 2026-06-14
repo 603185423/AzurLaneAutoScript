@@ -1,0 +1,14 @@
+server:
+  host: 0.0.0.0
+  port: 22367
+  log_level: info
+
+database:
+  url: sqlite:///./data/dashboard_api.db
+  # mysql example:
+  # url: mysql+pymysql://user:password@127.0.0.1:3306/dashboard_api?charset=utf8mb4
+
+auth:
+  admin_token: change-me-admin-token
+
+cors_allowed_origins: []
