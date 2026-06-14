@@ -46,6 +46,10 @@
       "name": "重启设置",
       "help": ""
     },
+    "DashboardSettings": {
+      "name": "Dashboard设置",
+      "help": "配置独立 Dashboard API 的地址、令牌与推送超时。"
+    },
     "Main": {
       "name": "主线图",
       "help": ""
@@ -505,6 +509,30 @@
     "Record": {
       "name": "GuildCoin.Record.name",
       "help": "GuildCoin.Record.help"
+    }
+  },
+  "DashboardAPI": {
+    "_info": {
+      "name": "Dashboard API",
+      "help": "脚本在更新本地 Dashboard 的同时，可把资源快照推送到独立 API，供手机查询、图表和桌面小部件使用。"
+    },
+    "Enable": {
+      "name": "启用API推送",
+      "help": "开启后，当前实例会把 Dashboard 资源推送到独立 API。",
+      "True": "True",
+      "False": "False"
+    },
+    "BaseURL": {
+      "name": "API地址",
+      "help": "独立 Dashboard API 的基地址，例如 http://127.0.0.1:22367 。"
+    },
+    "Token": {
+      "name": "用户令牌",
+      "help": "由 Dashboard API 管理员接口签发的用户令牌。"
+    },
+    "Timeout": {
+      "name": "请求超时",
+      "help": "脚本推送到 API 时的超时秒数。"
     }
   },
   "Scheduler": {

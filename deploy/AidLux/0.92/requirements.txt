@@ -22,6 +22,8 @@ pyzmq==22.3.0
 retrying
 rich==11.2.0
 scipy==1.7.1
+SQLAlchemy==1.4.52
+PyMySQL==1.1.1
 starlette==0.14.2
 tqdm
 uiautomator2==2.16.17

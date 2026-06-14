@@ -145,6 +145,17 @@
       "Storage": {}
     }
   },
+  "DashboardSettings": {
+    "DashboardAPI": {
+      "Enable": false,
+      "BaseURL": "http://127.0.0.1:22367",
+      "Token": null,
+      "Timeout": 3
+    },
+    "Storage": {
+      "Storage": {}
+    }
+  },
   "Main": {
     "Scheduler": {
       "Enable": false,

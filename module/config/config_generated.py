@@ -72,6 +72,12 @@ class GeneratedConfig:
     GuildCoin_Color = '^AAAAAA'
     GuildCoin_Record = datetime.datetime(2020, 1, 1, 0, 0)
 
+    # Group `DashboardAPI`
+    DashboardAPI_Enable = False  # True, False
+    DashboardAPI_BaseURL = 'http://127.0.0.1:22367'
+    DashboardAPI_Token = None
+    DashboardAPI_Timeout = 3
+
     # Group `Scheduler`
     Scheduler_Enable = False  # True, False
     Scheduler_NextRun = datetime.datetime(2020, 1, 1, 0, 0)

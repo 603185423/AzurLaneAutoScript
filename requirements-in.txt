@@ -42,3 +42,5 @@ uvicorn[standard]==0.17.6
 alas-webapp==0.3.7
 zerorpc==0.6.3
 pyzmq==22.3.0
+SQLAlchemy==1.4.52
+PyMySQL==1.1.1
