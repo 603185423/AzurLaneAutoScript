@@ -46,6 +46,10 @@
       "name": "再起動設定",
       "help": ""
     },
+    "DashboardSettings": {
+      "name": "Dashboard設定",
+      "help": "独立した Dashboard API のアドレス、トークン、送信タイムアウトを設定します。"
+    },
     "Main": {
       "name": "メイン海域",
       "help": ""
@@ -505,6 +509,30 @@
     "Record": {
       "name": "GuildCoin.Record.name",
       "help": "GuildCoin.Record.help"
+    }
+  },
+  "DashboardAPI": {
+    "_info": {
+      "name": "Dashboard API",
+      "help": "ローカル Dashboard を更新する際に、リソースのスナップショットを独立 API に送信し、スマホ、グラフ、ウィジェットから参照できるようにします。"
+    },
+    "Enable": {
+      "name": "API送信を有効化",
+      "help": "有効にすると、このインスタンスは Dashboard リソースを独立 API に送信します。",
+      "True": "True",
+      "False": "False"
+    },
+    "BaseURL": {
+      "name": "APIアドレス",
+      "help": "独立 Dashboard API のベース URL。例: http://127.0.0.1:22367 。"
+    },
+    "Token": {
+      "name": "ユーザートークン",
+      "help": "Dashboard API の管理 API で発行されたユーザートークンです。"
+    },
+    "Timeout": {
+      "name": "リクエストタイムアウト",
+      "help": "Dashboard API への送信時に使用するタイムアウト秒数です。"
     }
   },
   "Scheduler": {

@@ -41,3 +41,5 @@ starlette==0.14.2
 uvicorn[standard]==0.17.6
 zerorpc==0.6.3
 pyzmq==22.3.0
+SQLAlchemy==1.4.52
+PyMySQL==1.1.1

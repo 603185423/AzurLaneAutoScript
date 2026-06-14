@@ -46,6 +46,10 @@
       "name": "Restart",
       "help": ""
     },
+    "DashboardSettings": {
+      "name": "Dashboard Settings",
+      "help": "Configure the standalone Dashboard API endpoint, token, and push timeout."
+    },
     "Main": {
       "name": "Main",
       "help": ""
@@ -505,6 +509,30 @@
     "Record": {
       "name": "GuildCoin.Record.name",
       "help": "GuildCoin.Record.help"
+    }
+  },
+  "DashboardAPI": {
+    "_info": {
+      "name": "Dashboard API",
+      "help": "Push dashboard snapshots to a standalone API so phone apps, charts, and widgets can query them."
+    },
+    "Enable": {
+      "name": "Enable API Push",
+      "help": "When enabled, this instance pushes dashboard resource snapshots to the standalone API.",
+      "True": "True",
+      "False": "False"
+    },
+    "BaseURL": {
+      "name": "API Base URL",
+      "help": "Base URL of the standalone Dashboard API, for example http://127.0.0.1:22367 ."
+    },
+    "Token": {
+      "name": "User Token",
+      "help": "User token issued by the Dashboard API admin endpoints."
+    },
+    "Timeout": {
+      "name": "Request Timeout",
+      "help": "Timeout in seconds for dashboard push requests."
     }
   },
   "Scheduler": {

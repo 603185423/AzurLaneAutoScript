@@ -3,6 +3,8 @@ from datetime import datetime
 from cached_property import cached_property
 
 from module.config.deep import deep_get
+from module.dashboard_sync.dispatcher import queue_dashboard_snapshot
+from module.dashboard_sync.payload import build_resource_payload, datetime_to_unix_ms
 from module.logger import logger
 
 
@@ -27,11 +29,20 @@ class LogRes:
         key_group = f"Dashboard.{key}"
         original = deep_get(self.config.data, keys=key_group)
         record_time = datetime.now().replace(microsecond=0)
+        current_group = dict(original)
+        recorded_at_ms = datetime_to_unix_ms(record_time)
 
         if isinstance(value, int):
             if original["Value"] != value:
                 self.config.modified[f"{key_group}.Value"] = value
                 self.config.modified[f"{key_group}.Record"] = record_time
+                current_group["Value"] = value
+                current_group["Record"] = record_time
+                queue_dashboard_snapshot(
+                    self.config,
+                    recorded_at_ms=recorded_at_ms,
+                    resources={key: build_resource_payload(current_group)},
+                )
             return
 
         if isinstance(value, dict):
@@ -40,9 +51,16 @@ class LogRes:
                 if current_value == original[value_name]:
                     continue
                 self.config.modified[f"{key_group}.{value_name}"] = current_value
+                current_group[value_name] = current_value
                 modified = True
             if modified:
                 self.config.modified[f"{key_group}.Record"] = record_time
+                current_group["Record"] = record_time
+                queue_dashboard_snapshot(
+                    self.config,
+                    recorded_at_ms=recorded_at_ms,
+                    resources={key: build_resource_payload(current_group)},
+                )
             return
 
         logger.info("Unsupported dashboard resource value type")

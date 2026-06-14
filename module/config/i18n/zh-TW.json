@@ -46,6 +46,10 @@
       "name": "重啟設定",
       "help": ""
     },
+    "DashboardSettings": {
+      "name": "Dashboard設定",
+      "help": "設定獨立 Dashboard API 的位址、權杖與推送逾時。"
+    },
     "Main": {
       "name": "主線圖",
       "help": ""
@@ -505,6 +509,30 @@
     "Record": {
       "name": "GuildCoin.Record.name",
       "help": "GuildCoin.Record.help"
+    }
+  },
+  "DashboardAPI": {
+    "_info": {
+      "name": "Dashboard API",
+      "help": "腳本在更新本地 Dashboard 的同時，可把資源快照推送到獨立 API，供手機查詢、圖表和桌面小工具使用。"
+    },
+    "Enable": {
+      "name": "啟用API推送",
+      "help": "開啟後，當前實例會把 Dashboard 資源推送到獨立 API。",
+      "True": "True",
+      "False": "False"
+    },
+    "BaseURL": {
+      "name": "API位址",
+      "help": "獨立 Dashboard API 的基礎位址，例如 http://127.0.0.1:22367 。"
+    },
+    "Token": {
+      "name": "使用者權杖",
+      "help": "由 Dashboard API 管理員介面簽發的使用者權杖。"
+    },
+    "Timeout": {
+      "name": "請求逾時",
+      "help": "腳本推送到 API 時的逾時秒數。"
     }
   },
   "Scheduler": {

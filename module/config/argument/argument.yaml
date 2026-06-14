@@ -54,6 +54,18 @@ GuildCoin:
   Value: 0
   Color: ^AAAAAA
   Record: 2020-01-01 00:00:00
+DashboardAPI:
+  Enable:
+    type: checkbox
+    value: false
+    option: [ true, false ]
+  BaseURL:
+    value: http://127.0.0.1:22367
+    valuetype: str
+  Token:
+    value: ''
+    valuetype: str
+  Timeout: 3
 
 # ==================== Alas ====================
 

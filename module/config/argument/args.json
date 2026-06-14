@@ -627,6 +627,40 @@
       }
     }
   },
+  "DashboardSettings": {
+    "DashboardAPI": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "BaseURL": {
+        "type": "input",
+        "value": "http://127.0.0.1:22367",
+        "valuetype": "str"
+      },
+      "Token": {
+        "type": "input",
+        "value": "",
+        "valuetype": "str"
+      },
+      "Timeout": {
+        "type": "input",
+        "value": 3
+      }
+    },
+    "Storage": {
+      "Storage": {
+        "type": "storage",
+        "value": {},
+        "valuetype": "ignore",
+        "display": "disabled"
+      }
+    }
+  },
   "Main": {
     "Scheduler": {
       "Enable": {
