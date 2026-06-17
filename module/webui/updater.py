@@ -212,6 +212,12 @@ class Updater(DeployConfig, GitManager, PipManager):
         names = []
         for alas in instances:
             names.append(alas.config_name + "\n")
+            ProcessManager.emit_script_event(
+                alas.config_name,
+                event_type="updating",
+                status="updating",
+                reason="update",
+            )
 
         logger.info("Waiting all running alas finish.")
         self._wait_update(instances, names)
@@ -238,7 +244,7 @@ class Updater(DeployConfig, GitManager, PipManager):
             if time.time() - start_time > 60 * 10:
                 logger.warning("Waiting alas shutdown timeout, force kill")
                 for alas in _instances:
-                    alas.stop()
+                    alas.stop(reason="update")
                 break
         self._run_update(instances, names)
 
@@ -261,7 +267,12 @@ class Updater(DeployConfig, GitManager, PipManager):
             self.state = "failed"
             logger.warning("Update failed")
             self.event.clear()
-            ProcessManager.restart_processes(instances, self.event)
+            ProcessManager.restart_processes(
+                instances,
+                self.event,
+                event_type="restarted",
+                reason="update_failed_recover",
+            )
             return False
 
     @staticmethod

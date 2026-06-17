@@ -1,8 +1,15 @@
+import json
 from typing import Dict, Iterable, Optional
 
 from sqlalchemy import asc, desc
 
-from module.dashboard_api.db import DashboardApiUser, DashboardResourceLatest, DashboardResourceSample
+from module.dashboard_api.db import (
+    DashboardApiUser,
+    DashboardEvent,
+    DashboardEventLatest,
+    DashboardResourceLatest,
+    DashboardResourceSample,
+)
 
 
 class DashboardRepository:
@@ -161,3 +168,115 @@ class DashboardRepository:
                 query = query.filter(DashboardResourceSample.recorded_at_ms <= to_ms)
             sort_rule = desc if order == "desc" else asc
             return query.order_by(sort_rule(DashboardResourceSample.recorded_at_ms)).limit(limit).all()
+
+    def insert_event_and_update_latest(
+        self,
+        *,
+        user_id: int,
+        source_instance: str,
+        source_config: Optional[str],
+        event_category: str,
+        event_type: str,
+        status: Optional[str],
+        reason: Optional[str],
+        payload: Optional[dict],
+        recorded_at_ms: int,
+        received_at_ms: int,
+    ) -> DashboardEvent:
+        payload_json = json.dumps(payload, ensure_ascii=False, sort_keys=True) if payload is not None else None
+        with self.db.session() as session:
+            event = DashboardEvent(
+                user_id=user_id,
+                source_instance=source_instance,
+                source_config=source_config,
+                event_category=event_category,
+                event_type=event_type,
+                status=status,
+                reason=reason,
+                payload_json=payload_json,
+                recorded_at_ms=recorded_at_ms,
+                received_at_ms=received_at_ms,
+            )
+            session.add(event)
+
+            latest = (
+                session.query(DashboardEventLatest)
+                .filter(
+                    DashboardEventLatest.user_id == user_id,
+                    DashboardEventLatest.source_instance == source_instance,
+                    DashboardEventLatest.event_category == event_category,
+                )
+                .one_or_none()
+            )
+            if latest is None:
+                latest = DashboardEventLatest(
+                    user_id=user_id,
+                    source_instance=source_instance,
+                    source_config=source_config,
+                    event_category=event_category,
+                    event_type=event_type,
+                    status=status,
+                    reason=reason,
+                    payload_json=payload_json,
+                    recorded_at_ms=recorded_at_ms,
+                    received_at_ms=received_at_ms,
+                )
+                session.add(latest)
+            elif recorded_at_ms >= latest.recorded_at_ms:
+                latest.source_config = source_config
+                latest.event_type = event_type
+                latest.status = status
+                latest.reason = reason
+                latest.payload_json = payload_json
+                latest.recorded_at_ms = recorded_at_ms
+                latest.received_at_ms = received_at_ms
+                session.add(latest)
+
+            session.commit()
+            session.refresh(event)
+            return event
+
+    def get_events(
+        self,
+        *,
+        user_id: int,
+        event_category: Optional[str],
+        source_instance: Optional[str],
+        event_type: Optional[str],
+        from_ms: Optional[int],
+        to_ms: Optional[int],
+        limit: int,
+        order: str,
+    ) -> Iterable[DashboardEvent]:
+        with self.db.session() as session:
+            query = session.query(DashboardEvent).filter(DashboardEvent.user_id == user_id)
+            if event_category is not None:
+                query = query.filter(DashboardEvent.event_category == event_category)
+            if source_instance is not None:
+                query = query.filter(DashboardEvent.source_instance == source_instance)
+            if event_type is not None:
+                query = query.filter(DashboardEvent.event_type == event_type)
+            if from_ms is not None:
+                query = query.filter(DashboardEvent.recorded_at_ms >= from_ms)
+            if to_ms is not None:
+                query = query.filter(DashboardEvent.recorded_at_ms <= to_ms)
+            sort_rule = desc if order == "desc" else asc
+            return query.order_by(sort_rule(DashboardEvent.recorded_at_ms)).limit(limit).all()
+
+    def get_latest_events(
+        self,
+        *,
+        user_id: int,
+        event_category: Optional[str],
+        source_instance: Optional[str],
+    ) -> Iterable[DashboardEventLatest]:
+        with self.db.session() as session:
+            query = session.query(DashboardEventLatest).filter(DashboardEventLatest.user_id == user_id)
+            if event_category is not None:
+                query = query.filter(DashboardEventLatest.event_category == event_category)
+            if source_instance is not None:
+                query = query.filter(DashboardEventLatest.source_instance == source_instance)
+            return query.order_by(
+                DashboardEventLatest.event_category.asc(),
+                DashboardEventLatest.source_instance.asc(),
+            ).all()

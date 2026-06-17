@@ -1,6 +1,6 @@
 import os
 
-from sqlalchemy import BIGINT, BOOLEAN, Column, ForeignKey, Integer, String, UniqueConstraint, create_engine
+from sqlalchemy import BIGINT, BOOLEAN, Column, ForeignKey, Integer, String, Text, UniqueConstraint, create_engine
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 Base = declarative_base()
@@ -18,6 +18,7 @@ class DashboardApiUser(Base):
     updated_at_ms = Column(BIGINT, nullable=False)
 
     samples = relationship("DashboardResourceSample", back_populates="user")
+    events = relationship("DashboardEvent", back_populates="user")
 
 
 class DashboardResourceSample(Base):
@@ -51,6 +52,48 @@ class DashboardResourceLatest(Base):
     limit_value = Column(Integer, nullable=True)
     total_value = Column(Integer, nullable=True)
     color = Column(String(16), nullable=True)
+
+
+class DashboardEvent(Base):
+    __tablename__ = "dashboard_events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("dashboard_api_users.id"), nullable=False, index=True)
+    source_instance = Column(String(128), nullable=False, index=True)
+    source_config = Column(String(128), nullable=True)
+    event_category = Column(String(64), nullable=False, index=True)
+    event_type = Column(String(64), nullable=False, index=True)
+    status = Column(String(64), nullable=True, index=True)
+    reason = Column(String(128), nullable=True)
+    payload_json = Column(Text, nullable=True)
+    recorded_at_ms = Column(BIGINT, nullable=False, index=True)
+    received_at_ms = Column(BIGINT, nullable=False)
+
+    user = relationship("DashboardApiUser", back_populates="events")
+
+
+class DashboardEventLatest(Base):
+    __tablename__ = "dashboard_event_latest"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "source_instance",
+            "event_category",
+            name="uq_dashboard_event_latest_user_instance_category",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("dashboard_api_users.id"), nullable=False, index=True)
+    source_instance = Column(String(128), nullable=False, index=True)
+    source_config = Column(String(128), nullable=True)
+    event_category = Column(String(64), nullable=False, index=True)
+    event_type = Column(String(64), nullable=False, index=True)
+    status = Column(String(64), nullable=True, index=True)
+    reason = Column(String(128), nullable=True)
+    payload_json = Column(Text, nullable=True)
+    recorded_at_ms = Column(BIGINT, nullable=False, index=True)
+    received_at_ms = Column(BIGINT, nullable=False)
 
 
 class Database:

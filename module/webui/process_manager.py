@@ -15,6 +15,9 @@ from module.webui.fake_pil_module import *
 
 import_fake_pil_module()
 
+from module.dashboard_sync.client import push_script_event_by_config_name
+from module.dashboard_sync.dispatcher import queue_script_event
+from module.dashboard_sync.payload import now_unix_ms
 from module.logger import logger, set_file_logger, set_func_logger
 from module.submodule.submodule import load_mod
 from module.submodule.utils import get_available_func, get_available_mod, get_available_mod_func, get_config_mod, \
@@ -35,7 +38,33 @@ class ProcessManager:
         self._process_locks: Dict[str, threading.Lock] = {}
         self.thd_log_queue_handler: threading.Thread = None
 
-    def start(self, func, ev: threading.Event = None) -> None:
+    @staticmethod
+    def emit_script_event(
+        config_name: str,
+        *,
+        event_type: str,
+        status: str,
+        reason: str = None,
+        payload: dict = None,
+        recorded_at_ms: int = None,
+    ) -> None:
+        queue_script_event(
+            config_name,
+            event_category="script_runtime",
+            event_type=event_type,
+            status=status,
+            reason=reason,
+            recorded_at_ms=recorded_at_ms or now_unix_ms(),
+            payload=payload,
+        )
+
+    def start(
+        self,
+        func,
+        ev: threading.Event = None,
+        event_type: str = "started",
+        reason: str = "start",
+    ) -> None:
         if not self.alive:
             if func is None:
                 func = get_config_mod(self.config_name)
@@ -50,6 +79,13 @@ class ProcessManager:
             )
             self._process.start()
             self.start_log_queue_handler()
+            self.emit_script_event(
+                self.config_name,
+                event_type=event_type,
+                status="running",
+                reason=reason,
+                payload={"func": func},
+            )
 
     def start_log_queue_handler(self):
         if (
@@ -62,7 +98,7 @@ class ProcessManager:
         )
         self.thd_log_queue_handler.start()
 
-    def stop(self) -> None:
+    def stop(self, event_type: str = "stopped", reason: str = "manual_stop") -> None:
         try:
             lock = self._process_locks[self.config_name]
         except KeyError:
@@ -71,9 +107,20 @@ class ProcessManager:
 
         with lock:
             if self.alive:
+                display_reason = {
+                    "manual_stop": "Manual stop",
+                    "update": "Update",
+                    "finish": "Finish",
+                }.get(reason, reason.replace("_", " ").title())
+                self.emit_script_event(
+                    self.config_name,
+                    event_type=event_type,
+                    status="stopped",
+                    reason=reason,
+                )
                 self._process.kill()
                 self.renderables.append(
-                    f"[{self.config_name}] exited. Reason: Manual stop\n"
+                    f"[{self.config_name}] exited. Reason: {display_reason}\n"
                 )
             if self.thd_log_queue_handler is not None:
                 self.thd_log_queue_handler.join(timeout=1)
@@ -178,8 +225,26 @@ class ProcessManager:
                 getattr(load_mod(get_func_mod(func)), inflection.underscore(func))(config_name)
             else:
                 logger.critical(f"No function matched: {func}")
+            push_script_event_by_config_name(
+                config_name,
+                event_category="script_runtime",
+                event_type="finished",
+                status="stopped",
+                reason="finish",
+                recorded_at_ms=now_unix_ms(),
+                payload={"func": func},
+            )
             logger.info(f"[{config_name}] exited. Reason: Finish\n")
         except Exception as e:
+            push_script_event_by_config_name(
+                config_name,
+                event_category="script_runtime",
+                event_type="crashed",
+                status="error",
+                reason="exception",
+                recorded_at_ms=now_unix_ms(),
+                payload={"func": func, "error_type": type(e).__name__, "message": str(e)},
+            )
             logger.exception(e)
 
     @classmethod
@@ -192,7 +257,10 @@ class ProcessManager:
 
     @staticmethod
     def restart_processes(
-        instances: List[Union["ProcessManager", str]] = None, ev: threading.Event = None
+        instances: List[Union["ProcessManager", str]] = None,
+        ev: threading.Event = None,
+        event_type: str = "restarted",
+        reason: str = "update",
     ):
         """
         After update and reload, or failed to perform an update,
@@ -224,7 +292,12 @@ class ProcessManager:
 
         for process in _instances:
             logger.info(f"Starting [{process.config_name}]")
-            process.start(func=get_config_mod(process.config_name), ev=ev)
+            process.start(
+                func=get_config_mod(process.config_name),
+                ev=ev,
+                event_type=event_type,
+                reason=reason,
+            )
 
         try:
             os.remove("./config/reloadalas")
