@@ -5,6 +5,10 @@ def datetime_to_unix_ms(value: datetime) -> int:
     return int(value.timestamp() * 1000)
 
 
+def now_unix_ms() -> int:
+    return datetime_to_unix_ms(datetime.now())
+
+
 def normalize_color(value):
     if value is None:
         return None
@@ -34,4 +38,31 @@ def build_push_payload(config_name: str, recorded_at_ms: int, resources: dict) -
         },
         "recorded_at_ms": recorded_at_ms,
         "resources": resources,
+    }
+
+
+def build_event_payload(
+    config_name: str,
+    *,
+    event_category: str,
+    event_type: str,
+    status: str = None,
+    reason: str = None,
+    recorded_at_ms: int,
+    payload: dict = None,
+) -> dict:
+    return {
+        "source": {
+            "instance": config_name,
+            "config": config_name,
+            "producer": "AzurLaneAutoScript",
+        },
+        "recorded_at_ms": recorded_at_ms,
+        "event": {
+            "event_category": event_category,
+            "event_type": event_type,
+            "status": status,
+            "reason": reason,
+            "payload": payload,
+        },
     }

@@ -11,14 +11,16 @@
 1. 脚本在运行中识别游戏资源。
 2. 识别结果通过 `module/log_res/log_res.py` 写入本地 `Dashboard.*`。
 3. `LogRes` 在写本地 Dashboard 的同时，把相同的资源快照异步推送到独立的 `Dashboard API`。
-4. 独立 API 把每次推送写入历史表，并维护最新快照表。
-5. 安卓端通过用户令牌查询最新值、历史值和小部件概览。
+4. WebUI 进程管理层会在脚本启动、停止、异常退出、更新重启等关键点显式推送脚本运行事件。
+5. 独立 API 把资源和事件分别写入历史表，并分别维护 latest 快照表。
+6. 安卓端通过用户令牌查询资源最新值、资源历史、事件 latest 和事件历史。
 
 ## 2. 设计原则
 
 - API 是独立进程，独立命令手动启动，不与现有 WebUI 共进程。
 - API 使用 RESTful 风格，所有接口都在 `/api/v1` 下。
 - 支持多用户并发记录，通过不同用户令牌区分各自的数据空间。
+- 事件模型采用通用分类设计，当前用于脚本运行状态事件，后续也可扩展到其他脚本事件或游戏内事件。
 - 业务时间戳由脚本端提供，字段为 `recorded_at_ms`，语义是“脚本识别到该资源值的时间”。
 - 服务端可以记录 `received_at_ms` 作为接收时间，但不得覆盖脚本提供的业务时间。
 - 数据库存储同时支持 SQLite 与 MySQL。
@@ -120,7 +122,44 @@ Authorization: Bearer <token>
 - `resources`
   - 以资源名为 key 的资源快照集合。
 
-### 4.3 数据库表
+### 4.3 事件批次
+
+脚本运行事件和后续扩展事件统一走通用事件接口：
+
+```json
+{
+  "source": {
+    "instance": "alas",
+    "config": "alas",
+    "producer": "AzurLaneAutoScript"
+  },
+  "recorded_at_ms": 1750000000000,
+  "event": {
+    "event_category": "script_runtime",
+    "event_type": "started",
+    "status": "running",
+    "reason": "start",
+    "payload": {
+      "func": "alas"
+    }
+  }
+}
+```
+
+字段含义：
+
+- `event_category`
+  - 事件类别，当前脚本运行状态使用 `script_runtime`。
+- `event_type`
+  - 事件类型，例如 `started`、`stopped`、`finished`、`crashed`、`updating`、`restarted`。
+- `status`
+  - 当前状态，例如 `running`、`stopped`、`updating`、`error`。
+- `reason`
+  - 原因或语义标签，例如 `manual_stop`、`finish`、`update`、`exception`。
+- `payload`
+  - 可选扩展字段，用于放函数名、异常类型等附加信息。
+
+### 4.4 数据库表
 
 #### `dashboard_api_users`
 
@@ -161,6 +200,38 @@ Authorization: Bearer <token>
 - `color`
 
 这个表保存每个资源的最新值，用于首页与桌面小部件快速查询。
+
+#### `dashboard_events`
+
+- `id`
+- `user_id`
+- `source_instance`
+- `source_config`
+- `event_category`
+- `event_type`
+- `status`
+- `reason`
+- `payload_json`
+- `recorded_at_ms`
+- `received_at_ms`
+
+这个表保存完整事件历史，用于详情页、统计页和时间线展示。
+
+#### `dashboard_event_latest`
+
+- `id`
+- `user_id`
+- `source_instance`
+- `source_config`
+- `event_category`
+- `event_type`
+- `status`
+- `reason`
+- `payload_json`
+- `recorded_at_ms`
+- `received_at_ms`
+
+这个表保存每个 `user_id + source_instance + event_category` 的最新状态，用于总览页和桌面小部件快速读取。
 
 ## 5. 服务配置
 
@@ -478,6 +549,167 @@ Authorization: Bearer <user_token>
 - 手机首页加载当前全部最新资源。
 - 手动刷新资源面板。
 
+#### `POST /api/v1/events`
+
+请求头：
+
+```http
+Authorization: Bearer <user_token>
+Content-Type: application/json
+```
+
+请求体：
+
+```json
+{
+  "source": {
+    "instance": "alas",
+    "config": "alas",
+    "producer": "AzurLaneAutoScript"
+  },
+  "recorded_at_ms": 1750000000000,
+  "event": {
+    "event_category": "script_runtime",
+    "event_type": "crashed",
+    "status": "error",
+    "reason": "exception",
+    "payload": {
+      "func": "alas",
+      "error_type": "ScriptError"
+    }
+  }
+}
+```
+
+响应示例：
+
+```json
+{
+  "accepted": 1,
+  "recorded_at_ms": 1750000000000,
+  "received_at_ms": 1750000001234,
+  "event": {
+    "id": 12,
+    "source_instance": "alas",
+    "source_config": "alas",
+    "event_category": "script_runtime",
+    "event_type": "crashed",
+    "status": "error",
+    "reason": "exception",
+    "payload": {
+      "func": "alas",
+      "error_type": "ScriptError"
+    },
+    "recorded_at_ms": 1750000000000,
+    "received_at_ms": 1750000001234
+  }
+}
+```
+
+说明：
+
+- 这个接口用于记录脚本生命周期事件和后续扩展事件。
+- 事件一定会进入历史表，同时会按 `user + instance + category` 更新 latest 状态。
+
+#### `GET /api/v1/events/latest`
+
+查询参数：
+
+- `event_category`
+  - 可选，按事件类别过滤，例如 `script_runtime`。
+- `source_instance`
+  - 可选，按脚本实例过滤。
+
+响应示例：
+
+```json
+{
+  "events": [
+    {
+      "id": 21,
+      "source_instance": "alas",
+      "source_config": "alas",
+      "event_category": "script_runtime",
+      "event_type": "started",
+      "status": "running",
+      "reason": "start",
+      "payload": {
+        "func": "alas"
+      },
+      "recorded_at_ms": 1750000000000,
+      "received_at_ms": 1750000001234
+    }
+  ]
+}
+```
+
+用途：
+
+- 总览页查询每个实例当前状态。
+- 桌面小部件读取脚本当前是否运行、是否正在更新、是否异常停止。
+
+#### `GET /api/v1/events`
+
+查询参数：
+
+- `event_category`
+  - 可选，按事件类别过滤。
+- `source_instance`
+  - 可选，按脚本实例过滤。
+- `event_type`
+  - 可选，按事件类型过滤。
+- `from_ms`
+  - 可选，起始业务时间戳。
+- `to_ms`
+  - 可选，结束业务时间戳。
+- `limit`
+  - 可选，默认 `500`，最大 `5000`。
+- `order`
+  - 可选，`asc` 或 `desc`，默认 `desc`。
+
+响应示例：
+
+```json
+{
+  "items": [
+    {
+      "id": 11,
+      "source_instance": "alas",
+      "source_config": "alas",
+      "event_category": "script_runtime",
+      "event_type": "started",
+      "status": "running",
+      "reason": "start",
+      "payload": {
+        "func": "alas"
+      },
+      "recorded_at_ms": 1749999999000,
+      "received_at_ms": 1749999999321
+    },
+    {
+      "id": 12,
+      "source_instance": "alas",
+      "source_config": "alas",
+      "event_category": "script_runtime",
+      "event_type": "crashed",
+      "status": "error",
+      "reason": "exception",
+      "payload": {
+        "func": "alas",
+        "error_type": "ScriptError"
+      },
+      "recorded_at_ms": 1750000000000,
+      "received_at_ms": 1750000001234
+    }
+  ]
+}
+```
+
+用途：
+
+- 详情页展示事件时间线。
+- 统计页分析异常退出、更新重启和停机次数。
+
 #### `GET /api/v1/resources/{resource_name}/history`
 
 查询参数：
@@ -635,8 +867,13 @@ Authorization: Bearer <user_token>
 脚本仍会继续维护本地 `Dashboard.*`，因此：
 
 - WebUI 原有 Dashboard 面板仍可正常显示。
-- API 推送失败不会中断脚本主任务。
+- 资源推送和事件推送都会异步执行，失败不会中断脚本主任务。
 - 日志会记录推送失败原因，便于排查。
+- 脚本运行状态事件当前在以下显式节点推送：
+  - `ProcessManager.start()`
+  - `ProcessManager.stop()`
+  - `ProcessManager.run_process()` 正常结束和异常退出
+  - `Updater` 进入更新流程与更新失败恢复重启
 
 ## 10. 安卓端开发建议
 
@@ -657,23 +894,37 @@ Authorization: Bearer <user_token>
 推荐使用：
 
 - `GET /api/v1/resources/latest`
+- `GET /api/v1/events/latest?event_category=script_runtime`
 
 适合：
 
 - 资源总览页。
 - 详情页进入前的预览数据。
+- 当前脚本运行状态卡片。
 
 ### 桌面小部件
 
 推荐使用：
 
 - `GET /api/v1/widget/overview`
+- `GET /api/v1/events/latest?event_category=script_runtime`
 
 原因：
 
 - 这个接口已经是轻量聚合结果。
 - 安卓侧不需要自己计算 `age_ms`。
-- 适合定时轮询并直接映射到 RemoteViews。
+- 资源和脚本状态可以分别刷新并直接映射到 RemoteViews。
+
+### 事件详情与统计
+
+推荐使用：
+
+- `GET /api/v1/events?event_category=script_runtime`
+
+适合：
+
+- 脚本启动/停止/崩溃/更新的时间线。
+- 统计最近一天或最近一周的异常次数、重启次数和停机区间。
 
 推荐轮询频率：
 

@@ -10,7 +10,16 @@ from starlette.routing import Route
 from module.dashboard_api.auth import require_admin, require_user
 from module.dashboard_api.config import load_api_config
 from module.dashboard_api.db import Database
-from module.dashboard_api.models import ApiUserCreateRequest, ApiUserTokenResponse, ApiUserUpdateRequest, PushRequest, ResourceLatestListResponse
+from module.dashboard_api.models import (
+    ApiUserCreateRequest,
+    ApiUserTokenResponse,
+    ApiUserUpdateRequest,
+    EventHistoryListResponse,
+    EventLatestListResponse,
+    EventPushRequest,
+    PushRequest,
+    ResourceLatestListResponse,
+)
 from module.dashboard_api.service import DashboardService
 
 
@@ -103,6 +112,16 @@ async def create_push(request: Request):
     return JSONResponse(result, status_code=202)
 
 
+async def create_event(request: Request):
+    user = require_user(request)
+    payload = await _read_model(request, EventPushRequest)
+    try:
+        result = request.app.state.service.store_event(user, payload)
+    except ValueError as exc:
+        return _json_error(str(exc), status_code=400)
+    return JSONResponse(result, status_code=202)
+
+
 async def get_latest_resources(request: Request):
     user = require_user(request)
     resources = request.app.state.service.get_latest_resources(user.id)
@@ -141,6 +160,49 @@ async def get_widget_overview(request: Request):
     return JSONResponse(request.app.state.service.get_widget_overview(user.id).dict())
 
 
+async def get_events(request: Request):
+    user = require_user(request)
+    query = request.query_params
+    try:
+        from_ms = int(query["from_ms"]) if "from_ms" in query else None
+        to_ms = int(query["to_ms"]) if "to_ms" in query else None
+        limit = int(query.get("limit", 500))
+    except ValueError:
+        return _json_error("from_ms, to_ms and limit must be integers", status_code=400)
+    limit = max(1, min(limit, 5000))
+    order = query.get("order", "desc")
+    if order not in {"asc", "desc"}:
+        return _json_error("order must be asc or desc", status_code=400)
+    try:
+        items = request.app.state.service.get_events(
+            user.id,
+            event_category=query.get("event_category"),
+            source_instance=query.get("source_instance"),
+            event_type=query.get("event_type"),
+            from_ms=from_ms,
+            to_ms=to_ms,
+            limit=limit,
+            order=order,
+        )
+    except ValueError as exc:
+        return _json_error(str(exc), status_code=400)
+    return JSONResponse(EventHistoryListResponse(items=items).dict())
+
+
+async def get_latest_events(request: Request):
+    user = require_user(request)
+    query = request.query_params
+    try:
+        events = request.app.state.service.get_latest_events(
+            user.id,
+            event_category=query.get("event_category"),
+            source_instance=query.get("source_instance"),
+        )
+    except ValueError as exc:
+        return _json_error(str(exc), status_code=400)
+    return JSONResponse(EventLatestListResponse(events=events).dict())
+
+
 def create_app(config_path: str):
     api_config = load_api_config(config_path)
     database = Database(api_config.database_url)
@@ -171,6 +233,9 @@ def create_app(config_path: str):
             Route("/api/v1/admin/users/{user_id:int}/rotate-token", admin_rotate_user_token, methods=["POST"]),
             Route("/api/v1/me", get_me, methods=["GET"]),
             Route("/api/v1/pushes", create_push, methods=["POST"]),
+            Route("/api/v1/events", create_event, methods=["POST"]),
+            Route("/api/v1/events", get_events, methods=["GET"]),
+            Route("/api/v1/events/latest", get_latest_events, methods=["GET"]),
             Route("/api/v1/resources/latest", get_latest_resources, methods=["GET"]),
             Route("/api/v1/resources/{resource_name:str}/history", get_resource_history, methods=["GET"]),
             Route("/api/v1/widget/overview", get_widget_overview, methods=["GET"]),

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, validator
 
@@ -79,3 +79,50 @@ class WidgetResourceResponse(ResourcePointResponse):
 class WidgetOverviewResponse(BaseModel):
     generated_at_ms: int
     resources: List[WidgetResourceResponse]
+
+
+class EventPayload(BaseModel):
+    event_category: str = Field(..., min_length=1, max_length=64)
+    event_type: str = Field(..., min_length=1, max_length=64)
+    status: Optional[str] = Field(default=None, max_length=64)
+    reason: Optional[str] = Field(default=None, max_length=128)
+    payload: Optional[Dict[str, Any]] = None
+
+
+class EventPushRequest(BaseModel):
+    recorded_at_ms: int
+    source: PushSource = Field(default_factory=PushSource)
+    event: EventPayload
+
+    @validator("recorded_at_ms")
+    def validate_event_recorded_at_ms(cls, value):
+        if value <= 0:
+            raise ValueError("recorded_at_ms must be positive")
+        return value
+
+    @validator("source")
+    def validate_event_source(cls, value):
+        if not value.instance:
+            raise ValueError("source.instance is required for events")
+        return value
+
+
+class EventItemResponse(BaseModel):
+    id: Optional[int] = None
+    source_instance: str
+    source_config: Optional[str] = None
+    event_category: str
+    event_type: str
+    status: Optional[str] = None
+    reason: Optional[str] = None
+    payload: Optional[Dict[str, Any]] = None
+    recorded_at_ms: int
+    received_at_ms: int
+
+
+class EventHistoryListResponse(BaseModel):
+    items: List[EventItemResponse]
+
+
+class EventLatestListResponse(BaseModel):
+    events: List[EventItemResponse]
