@@ -235,6 +235,20 @@ class ProcessManager:
                 payload={"func": func},
             )
             logger.info(f"[{config_name}] exited. Reason: Finish\n")
+        except SystemExit as e:
+            exit_code = e.code if isinstance(e.code, int) else 1
+            if exit_code not in (0, None):
+                push_script_event_by_config_name(
+                    config_name,
+                    event_category="script_runtime",
+                    event_type="crashed",
+                    status="error",
+                    reason="system_exit",
+                    recorded_at_ms=now_unix_ms(),
+                    payload={"func": func, "exit_code": exit_code},
+                )
+                logger.warning(f"[{config_name}] exited by SystemExit: {exit_code}")
+            raise
         except Exception as e:
             push_script_event_by_config_name(
                 config_name,
