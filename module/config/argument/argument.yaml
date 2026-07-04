@@ -157,6 +157,8 @@ Error:
 Optimization:
   ScreenshotInterval: 0.3
   CombatScreenshotInterval: 1.0
+  LowPerformanceMode: false
+  LowPerformanceStartupWait: 300
   TaskHoardingDuration: 0
   WhenTaskQueueEmpty:
     value: goto_main

@@ -408,6 +408,14 @@
         "type": "input",
         "value": 1.0
       },
+      "LowPerformanceMode": {
+        "type": "checkbox",
+        "value": false
+      },
+      "LowPerformanceStartupWait": {
+        "type": "input",
+        "value": 300
+      },
       "TaskHoardingDuration": {
         "type": "input",
         "value": 0
