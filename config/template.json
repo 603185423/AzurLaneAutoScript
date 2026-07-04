@@ -91,6 +91,7 @@
     "Optimization": {
       "ScreenshotInterval": 0.3,
       "CombatScreenshotInterval": 1.0,
+      "LowPerformanceMode": false,
       "TaskHoardingDuration": 0,
       "WhenTaskQueueEmpty": "goto_main"
     },

@@ -157,6 +157,10 @@ Error:
 Optimization:
   ScreenshotInterval: 0.3
   CombatScreenshotInterval: 1.0
+  LowPerformanceMode:
+    type: checkbox
+    value: false
+    option: [ true, false ]
   TaskHoardingDuration: 0
   WhenTaskQueueEmpty:
     value: goto_main

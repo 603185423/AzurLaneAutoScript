@@ -777,6 +777,10 @@
       "name": "Take Screenshots Every X Second(s) In Combat",
       "help": "Minimum interval between 2 screenshots, limited in 0.3 ~ 1.0, can help reduce CPU during battle"
     },
+    "LowPerformanceMode": {
+      "name": "Low Performance Mode",
+      "help": "Use a more conservative long-wait timeout for low-end emulators. This extends startup and other long-wait scenarios from 180 seconds to 300 seconds to avoid false stuck detection"
+    },
     "TaskHoardingDuration": {
       "name": "Hoard Tasks For X Minute(s)",
       "help": "By purposely not adding ready tasks to pending, allows for larger subsets to be built and run en masse at a later time\nCan reduce the frequency of operating AL"

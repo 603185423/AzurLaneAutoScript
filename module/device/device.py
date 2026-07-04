@@ -62,11 +62,14 @@ def show_function_call():
 
 
 class Device(Screenshot, Control, AppControl):
+    STUCK_TIMER_SECONDS = 60
+    STUCK_TIMER_LONG_SECONDS = 180
+    STUCK_TIMER_LONG_SECONDS_LOW_PERFORMANCE = 300
     _screen_size_checked = False
     detect_record = set()
     click_record = collections.deque(maxlen=15)
-    stuck_timer = Timer(60, count=60).start()
-    stuck_timer_long = Timer(180, count=180).start()
+    stuck_timer = Timer(STUCK_TIMER_SECONDS, count=STUCK_TIMER_SECONDS).start()
+    stuck_timer_long = Timer(STUCK_TIMER_LONG_SECONDS, count=STUCK_TIMER_LONG_SECONDS).start()
     stuck_long_wait_list = ['BATTLE_STATUS_S', 'PAUSE', 'LOGIN_CHECK']
 
     def __init__(self, *args, **kwargs):
@@ -87,6 +90,13 @@ class Device(Screenshot, Control, AppControl):
                         f'please set a correct serial'
                     )
                     raise RequestHumanTakeover
+
+        self.stuck_timer = Timer(self.STUCK_TIMER_SECONDS, count=self.STUCK_TIMER_SECONDS).start()
+        stuck_timer_long = self.STUCK_TIMER_LONG_SECONDS
+        if getattr(self.config, 'Optimization_LowPerformanceMode', False):
+            stuck_timer_long = self.STUCK_TIMER_LONG_SECONDS_LOW_PERFORMANCE
+            logger.info(f'Low performance mode enabled, extend long wait timeout to {stuck_timer_long}s')
+        self.stuck_timer_long = Timer(stuck_timer_long, count=stuck_timer_long).start()
 
         # Auto-fill emulator info
         if IS_WINDOWS and self.config.EmulatorInfo_Emulator == 'auto':

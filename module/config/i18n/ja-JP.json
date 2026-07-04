@@ -777,6 +777,10 @@
       "name": "Optimization.CombatScreenshotInterval.name",
       "help": "Optimization.CombatScreenshotInterval.help"
     },
+    "LowPerformanceMode": {
+      "name": "Optimization.LowPerformanceMode.name",
+      "help": "Optimization.LowPerformanceMode.help"
+    },
     "TaskHoardingDuration": {
       "name": "Optimization.TaskHoardingDuration.name",
       "help": "Optimization.TaskHoardingDuration.help"
