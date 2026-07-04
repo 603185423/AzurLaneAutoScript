@@ -693,7 +693,7 @@
       "AmbushEvade": true
     },
     "Coalition": {
-      "Mode": "hard",
+      "Mode": "tc3",
       "Fleet": "single"
     },
     "StopCondition": {
@@ -1394,7 +1394,8 @@
     },
     "Meowfficer": {
       "BuyAmount": 1,
-      "FortChoreMeowfficer": true
+      "FortChoreMeowfficer": true,
+      "OverflowCoins": -1
     },
     "MeowfficerTrain": {
       "Enable": false,
