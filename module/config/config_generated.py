@@ -109,6 +109,8 @@ class GeneratedConfig:
     # Group `Optimization`
     Optimization_ScreenshotInterval = 0.3
     Optimization_CombatScreenshotInterval = 1.0
+    Optimization_LowPerformanceMode = False
+    Optimization_LowPerformanceStartupWait = 300
     Optimization_TaskHoardingDuration = 0
     Optimization_WhenTaskQueueEmpty = 'goto_main'  # stay_there, goto_main, close_game
 

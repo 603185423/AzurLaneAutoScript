@@ -145,10 +145,22 @@ class LoginHandler(UI):
             GameNotRunningError:
         """
         logger.info('handle_app_login')
+        original_stuck_timer_long = self.device.stuck_timer_long
+        if getattr(self.config, 'Optimization_LowPerformanceMode', False):
+            configured_startup_wait = max(int(getattr(self.config, 'Optimization_LowPerformanceStartupWait', 300)), 0)
+            startup_wait = max(configured_startup_wait, int(original_stuck_timer_long.limit))
+            if startup_wait != configured_startup_wait:
+                logger.warning(
+                    f'Optimization.LowPerformanceStartupWait {configured_startup_wait} is revised to {startup_wait}'
+                )
+            logger.info(f'Low performance mode enabled, set login wait timeout to {startup_wait}s')
+            self.device.stuck_timer_long = Timer(startup_wait, count=startup_wait).start()
         self.device.screenshot_interval_set(1.0)
         try:
             self._handle_app_login()
         finally:
+            self.device.stuck_timer_long = original_stuck_timer_long
+            self.device.stuck_record_clear()
             self.device.screenshot_interval_set()
 
     def app_stop(self):
