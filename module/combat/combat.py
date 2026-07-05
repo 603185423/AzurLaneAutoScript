@@ -22,6 +22,11 @@ class Combat(Level, HPBalancer, Retirement, SubmarineCall, CombatAuto, CombatMan
     _automation_set_timer = Timer(1)
     battle_status_click_interval = 0
 
+    def exp_info_click_interval(self):
+        if getattr(self.config, 'Optimization_LowPerformanceMode', False):
+            return 1
+        return 0
+
     def combat_appear(self):
         """
         Returns:
@@ -494,13 +499,14 @@ class Combat(Level, HPBalancer, Retirement, SubmarineCall, CombatAuto, CombatMan
         """
         if self.is_combat_executing():
             return False
-        if self.appear_then_click(EXP_INFO_S):
+        interval = self.exp_info_click_interval()
+        if self.appear_then_click(EXP_INFO_S, interval=interval):
             self.device.sleep((0.25, 0.5))
             return True
-        if self.appear_then_click(EXP_INFO_A):
+        if self.appear_then_click(EXP_INFO_A, interval=interval):
             self.device.sleep((0.25, 0.5))
             return True
-        if self.appear_then_click(EXP_INFO_B):
+        if self.appear_then_click(EXP_INFO_B, interval=interval):
             self.device.sleep((0.25, 0.5))
             return True
 

@@ -82,23 +82,24 @@ class Combat(Combat_, MapEventHandler):
     def handle_exp_info(self):
         if self.is_combat_executing():
             return False
+        interval = self.exp_info_click_interval()
         if self.__os_combat_drop:
             sleep = (1.5, 2)
         else:
             sleep = (0.25, 0.5)
-        if self.appear_then_click(EXP_INFO_S):
+        if self.appear_then_click(EXP_INFO_S, interval=interval):
             self.device.sleep(sleep)
             return True
-        if self.appear_then_click(EXP_INFO_A):
+        if self.appear_then_click(EXP_INFO_A, interval=interval):
             self.device.sleep(sleep)
             return True
-        if self.appear_then_click(EXP_INFO_B):
+        if self.appear_then_click(EXP_INFO_B, interval=interval):
             self.device.sleep(sleep)
             return True
-        if self.appear_then_click(EXP_INFO_C):
+        if self.appear_then_click(EXP_INFO_C, interval=interval):
             self.device.sleep(sleep)
             return True
-        if self.appear_then_click(EXP_INFO_D):
+        if self.appear_then_click(EXP_INFO_D, interval=interval):
             self.device.sleep(sleep)
             return True
 
