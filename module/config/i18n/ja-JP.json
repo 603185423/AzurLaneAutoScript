@@ -778,6 +778,18 @@
       "name": "Optimization.CombatScreenshotInterval.name",
       "help": "Optimization.CombatScreenshotInterval.help"
     },
+    "LowPerformanceMode": {
+      "name": "Low Performance Mode",
+      "help": "When enabled, only the game startup and login stage will use a longer stuck timeout for slow emulators"
+    },
+    "LowPerformanceStartupWait": {
+      "name": "Low Performance Startup Wait X Second(s)",
+      "help": "Only used when Low Performance Mode is enabled; the login-stage long wait timeout will use at least this value, default 300 seconds"
+    },
+    "LowPerformanceDispatchRecommendWait": {
+      "name": "Low Performance Dispatch Recommend Wait X Second(s)",
+      "help": "Only used when Low Performance Mode is enabled; after clicking Recommend in Guild > Operations > Dispatch, wait this long before continuing recognition, default 8 seconds"
+    },
     "TaskHoardingDuration": {
       "name": "Optimization.TaskHoardingDuration.name",
       "help": "Optimization.TaskHoardingDuration.help"

@@ -159,6 +159,7 @@ Optimization:
   CombatScreenshotInterval: 1.0
   LowPerformanceMode: false
   LowPerformanceStartupWait: 300
+  LowPerformanceDispatchRecommendWait: 8
   TaskHoardingDuration: 0
   WhenTaskQueueEmpty:
     value: goto_main
