@@ -417,6 +417,10 @@
         "type": "input",
         "value": 300
       },
+      "LowPerformanceDispatchRecommendWait": {
+        "type": "input",
+        "value": 8
+      },
       "TaskHoardingDuration": {
         "type": "input",
         "value": 0

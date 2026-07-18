@@ -13,6 +13,17 @@ GUILD_OPERATIONS_PROGRESS = DigitCounter(OCR_GUILD_OPERATIONS_PROGRESS, letter=(
 
 
 class GuildOperations(GuildBase):
+    def _guild_operations_low_performance_recommend_wait(self):
+        if not getattr(self.config, 'Optimization_LowPerformanceMode', False):
+            return
+
+        wait_time = max(float(getattr(self.config, 'Optimization_LowPerformanceDispatchRecommendWait', 8)), 0)
+        if wait_time <= 0:
+            return
+
+        logger.info(f'Low performance mode enabled, wait {wait_time:g}s after clicking recommend')
+        self.device.sleep(wait_time)
+
     def _guild_operations_ensure(self, skip_first_screenshot=True):
         """
         Ensure guild operation is loaded
@@ -368,6 +379,7 @@ class GuildOperations(GuildBase):
                 # Don't use offset here, because GUILD_DISPATCH_FLEET_UNFILLED only has a difference in colors
                 # Use long interval because the game needs a few seconds to choose the ships
                 self.device.click(GUILD_DISPATCH_RECOMMEND)
+                self._guild_operations_low_performance_recommend_wait()
                 continue
             if not dispatched and self.appear(GUILD_DISPATCH_FLEET, offset=(20, 20), interval=3):
                 # GUILD_DISPATCH_FLEET and GUILD_DISPATCH_FLEET_UNFILLED has same feature but different colors
