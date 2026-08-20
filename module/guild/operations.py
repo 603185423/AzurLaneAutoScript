@@ -24,6 +24,11 @@ class GuildOperations(GuildBase):
         logger.info(f'Low performance mode enabled, wait {wait_time:g}s after clicking recommend')
         self.device.sleep(wait_time)
 
+    def _guild_operations_dispatch_fleet_unfilled_appear(self):
+        if getattr(self.config, 'Optimization_LowPerformanceMode', False):
+            return self.match_template_color(GUILD_DISPATCH_FLEET_UNFILLED, offset=(20, 20), interval=3)
+        return self.appear(GUILD_DISPATCH_FLEET_UNFILLED, offset=(20, 20), interval=3)
+
     def _guild_operations_ensure(self, skip_first_screenshot=True):
         """
         Ensure guild operation is loaded
@@ -375,7 +380,7 @@ class GuildOperations(GuildBase):
             else:
                 self.device.screenshot()
 
-            if self.appear(GUILD_DISPATCH_FLEET_UNFILLED, offset=(20, 20), interval=3):
+            if self._guild_operations_dispatch_fleet_unfilled_appear():
                 # Don't use offset here, because GUILD_DISPATCH_FLEET_UNFILLED only has a difference in colors
                 # Use long interval because the game needs a few seconds to choose the ships
                 self.device.click(GUILD_DISPATCH_RECOMMEND)
