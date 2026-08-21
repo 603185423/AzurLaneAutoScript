@@ -29,5 +29,12 @@ jobs:
 
           cd repo.git
 
-          git push --mirror \
-            "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/l6031l/AzurLaneAutoScript.git"
+          GITEE_URL="https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/l6031l/AzurLaneAutoScript.git"
+
+          git push "$GITEE_URL" \
+            "+refs/heads/*:refs/heads/*" \
+            --prune
+
+          git push "$GITEE_URL" \
+            "+refs/tags/*:refs/tags/*" \
+            --prune
