@@ -1,0 +1,33 @@
+name: Sync to Gitee
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "**"
+
+  workflow_dispatch:
+
+concurrency:
+  group: sync-gitee
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Mirror GitHub repository
+        env:
+          GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          git clone --mirror \
+            "https://github.com/603185423/AzurLaneAutoScript.git" \
+            repo.git
+
+          cd repo.git
+
+          git push --mirror \
+            "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/l6031l/AzurLaneAutoScript.git"
