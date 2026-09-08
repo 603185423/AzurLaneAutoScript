@@ -6,6 +6,9 @@ on:
       - "**"
     tags:
       - "**"
+  workflow_run:
+    workflows: ["Upstream Sync"]
+    types: [completed]
 
   workflow_dispatch:
 
