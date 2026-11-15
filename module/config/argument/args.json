@@ -417,6 +417,12 @@
         "type": "input",
         "value": 300
       },
+      "LowPerformanceLoginClickInterval": {
+        "type": "input",
+        "value": 10,
+        "valuetype": "ignore",
+        "validate": "[1-9][0-9]*"
+      },
       "LowPerformanceDispatchRecommendWait": {
         "type": "input",
         "value": 8

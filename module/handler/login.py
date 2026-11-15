@@ -33,6 +33,9 @@ class LoginHandler(UI):
 
         confirm_timer = Timer(1.5, count=4).start()
         orientation_timer = Timer(5)
+        login_interval = 5
+        if getattr(self.config, 'Optimization_LowPerformanceMode', False):
+            login_interval = max(1, int(self.config.Optimization_LowPerformanceLoginClickInterval))
         login_success = False
         self.device.stuck_record_clear()
         self.device.click_record_clear()
@@ -55,7 +58,7 @@ class LoginHandler(UI):
                 confirm_timer.reset()
 
             # Login
-            if self.match_template_color(LOGIN_CHECK, offset=(30, 30), interval=5):
+            if self.match_template_color(LOGIN_CHECK, offset=(30, 30), interval=login_interval):
                 self.device.click(LOGIN_CHECK)
                 if not login_success:
                     logger.info('Login success')
